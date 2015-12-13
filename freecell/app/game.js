@@ -2,9 +2,9 @@ var suits = ['clubs', 'diamonds', 'hearts', 'spades'];
 var values = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
 var maxColumns = 8;
 var columnSpace = 20;
-var rowSpace = 40;
-var cardHeight = 150;
-var cardWidth = 100;
+var rowSpace = 30;
+var cardHeight = 100;
+var cardWidth = 80;
 var suitCodes = {
   clubs:'&clubs;',
   diamonds:'&diams;',
@@ -12,7 +12,7 @@ var suitCodes = {
   spades:'&spades;'
 }
 
-var topStartPosition = 20;
+var topStartPosition = 120;
 var leftStartPosition = 20;
 
 var initialized = false;
@@ -21,9 +21,13 @@ var Card = function(value, suit) {
   var instance = this;
   this.value = ko.observable();
   this.suit = ko.observable();
+  this.blankCard = ko.observable(false);
+  this.inFreeCell = ko.observable(false);
   if(value && suit) {
     instance.value(value);
     instance.suit(suit);
+  } else {
+    instance.blankCard(true);
   }
   this.row = ko.observable();
   this.column = ko.observable();
@@ -54,7 +58,6 @@ var Game = function(){
   $.each(suits, function(suitIndex, suit) {
     $.each(values, function(valueIndex, value){
       tempCards.push(new Card(value, suit));
-
     });
   });
   shuffleArray(tempCards);
@@ -78,15 +81,44 @@ var Game = function(){
   });
   instance.cards = ko.observableArray(tempCards);
   instance.freeCells = ko.observableArray([new Card(), new Card(), new Card(), new Card()]);
+  instance.endCells = ko.observableArray([new Card(), new Card(), new Card(), new Card()]);
+  $.each(instance.freeCells(), function(i, freeCell){
+    freeCell.column(i);
+    instance.endCells()[i].column(i+4);
+  });
+  clickedCard = null;
+  clearClicked = function() {
+    $.each(instance.cards(), function(i, card) {
+      card.clicked(false);
+    });
+  }
   instance.setClicked = function(data){
     if(initialized) {
-      var col = cardColumns[data.column()];
-      var lastCard = col[col.length - 1];
-      var currentVal = lastCard.clicked();
-      $.each(instance.cards(), function(i, card) {
-        card.clicked(false);
-      });
-      lastCard.clicked(!currentVal);
+        if(!data.blankCard() && !data.inFreeCell()) {
+          var col = cardColumns[data.column()];
+          var lastCard = col[col.length - 1];
+          var currentVal = lastCard.clicked();
+          clearClicked();
+          lastCard.clicked(!currentVal);
+          clickedCard = lastCard.clicked() ? lastCard : null;
+      } else {
+        if(clickedCard && data.blankCard()){
+          // free cell
+          if(data.column() < 4) {
+            instance.cards.remove(clickedCard);
+            var cardCol = cardColumns[clickedCard.column()];
+            cardColumns[clickedCard.column()] = cardCol.slice(0, cardCol.length - 1);
+            clickedCard.column(data.column());
+            clickedCard.row(0);
+            clickedCard.clicked(false);
+            clickedCard.inFreeCell(true);
+            instance.freeCells.replace(instance.freeCells()[data.column()], clickedCard);
+            clickedCard = null;
+          }else {
+            // end cell
+          }
+        }
+      }
     }
   }
 }

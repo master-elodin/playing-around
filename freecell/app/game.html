@@ -4,6 +4,18 @@
   <link rel="stylesheet" type="text/css" href="game.css">
 </head>
 <body>
+  <div data-bind="foreach: freeCells">
+    <div class="card" data-bind="style: {left : leftValue()}, css: {suit: suit, clicked : clicked, 'empty-card' : blankCard }, click: $root.setClicked($data)">
+      <span data-bind="css: suit, html: code"></span>
+      <span data-bind="text: value"></span>
+    </div>
+  </div>
+  <div data-bind="foreach: endCells">
+    <div class="card end-cell" data-bind="style: {left : leftValue()}, css: {suit: suit, 'empty-card' : blankCard }">
+      <span data-bind="css: suit, html: code"></span>
+      <span data-bind="text: value"></span>
+    </div>
+  </div>
   <div class="cards" data-bind="foreach: cards">
     <div class="card" data-bind="style: { top : topValue(), left : leftValue() }, css: {suit: suit, clicked : clicked}, click: $root.setClicked($data)">
       <span data-bind="css: suit, html: code"></span>
