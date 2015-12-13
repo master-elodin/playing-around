@@ -1,0 +1,22 @@
+.card {
+  border: 2px solid black;
+  height: 150px;
+  width: 100px;
+  position: absolute;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.card span {
+  padding-left: 5px;
+  margin-top: 5px;
+}
+.card .hearts, .card .diamonds {
+  color: red;
+}
+.clicked {
+  background: rgba(180, 180, 180, 1);
+}
+.empty-card {
+  border: 1px dotted black;
+}
