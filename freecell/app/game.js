@@ -33,6 +33,11 @@ var Card = function(value, suit) {
   this.column = ko.observable();
   this.clicked = ko.observable(false);
 
+  this.removeCardValue = function() {
+    instance.value('');
+    instance.suit('');
+    instance.blankCard(true);
+  }
   this.topValue = ko.computed(function() {
     return instance.row() * rowSpace + topStartPosition;
   });
@@ -87,38 +92,65 @@ var Game = function(){
     instance.endCells()[i].column(i+4);
   });
   clickedCard = null;
+  lastEmptyFreeCell = null;
+  var hiddenFreeCells = {};
+  var moveComplete = true;
   clearClicked = function() {
     $.each(instance.cards(), function(i, card) {
       card.clicked(false);
     });
+    $.each(instance.freeCells(), function(i, card) {
+      card.clicked(false);
+    });
+  }
+  removeFromFreeCell = function( card, col ) {
+    instance.freeCells.replace(card, hiddenFreeCells[col]);
+  }
+  removeFromCol = function( card ) {
+    instance.cards.remove(card);
+    var cardCol = cardColumns[clickedCard.column()];
+    cardColumns[clickedCard.column()] = cardCol.slice(0, cardCol.length - 1);
+  }
+  moveCardToFreeCell = function( card, freeCellCol ) {
+    if(instance.freeCells()[freeCellCol].blankCard()) {
+      if(moveComplete) {
+        moveComplete = false;
+        // Remove from current location
+        card.inFreeCell() ? removeFromFreeCell(card, card.column()) : removeFromCol( card );
+        // Add to free cell
+        if(clickedCard) {
+          clickedCard.column(freeCellCol);
+          clickedCard.row(0);
+          clickedCard.inFreeCell(true);
+          hiddenFreeCells[freeCellCol] = instance.freeCells()[freeCellCol]
+          instance.freeCells.replace(hiddenFreeCells[freeCellCol], clickedCard);
+        }
+
+        clickedCard = null;
+        clearClicked();
+        moveComplete = true;
+      }
+    }
+  }
+  clickCard = function( card ) {
+    var currentlyClicked = card.clicked();
+    clearClicked();
+    card.clicked(!currentlyClicked);
+    clickedCard = !currentlyClicked ? card : null;
+  }
+  instance.clickFreeCell = function(data) {
+    if(initialized) {
+      if(!data.blankCard()){
+        clickCard( data );
+      }else {
+        moveCardToFreeCell( clickedCard, data.column() );
+      }
+    }
   }
   instance.setClicked = function(data){
     if(initialized) {
-        if(!data.blankCard() && !data.inFreeCell()) {
-          var col = cardColumns[data.column()];
-          var lastCard = col[col.length - 1];
-          var currentVal = lastCard.clicked();
-          clearClicked();
-          lastCard.clicked(!currentVal);
-          clickedCard = lastCard.clicked() ? lastCard : null;
-      } else {
-        if(clickedCard && data.blankCard()){
-          // free cell
-          if(data.column() < 4) {
-            instance.cards.remove(clickedCard);
-            var cardCol = cardColumns[clickedCard.column()];
-            cardColumns[clickedCard.column()] = cardCol.slice(0, cardCol.length - 1);
-            clickedCard.column(data.column());
-            clickedCard.row(0);
-            clickedCard.clicked(false);
-            clickedCard.inFreeCell(true);
-            instance.freeCells.replace(instance.freeCells()[data.column()], clickedCard);
-            clickedCard = null;
-          }else {
-            // end cell
-          }
-        }
-      }
+      var col = cardColumns[data.column()];
+      clickCard( col[col.length - 1] );
     }
   }
 }

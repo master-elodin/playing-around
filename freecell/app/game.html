@@ -5,7 +5,7 @@
 </head>
 <body>
   <div data-bind="foreach: freeCells">
-    <div class="card" data-bind="style: {left : leftValue()}, css: {suit: suit, clicked : clicked, 'empty-card' : blankCard }, click: $root.setClicked($data)">
+    <div class="card" data-bind="style: {left : leftValue()}, css: {suit: suit, clicked : clicked, 'empty-card' : blankCard }, click: $root.clickFreeCell($data)">
       <span data-bind="css: suit, html: code"></span>
       <span data-bind="text: value"></span>
     </div>
