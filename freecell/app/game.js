@@ -1,4 +1,12 @@
 var suits = ['clubs', 'diamonds', 'hearts', 'spades'];
+var colors = {black: ['clubs', 'spades'], red: ['diamonds', 'hearts']}
+var isOppositeColor = function( card1, card2 ) {
+  if( card2 ) {
+    return colors.black.indexOf(card1.suit()) > -1 ? colors.red.indexOf(card2.suit()) > -1 : colors.black.indexOf(card2.suit()) > -1;
+  } else {
+    return true;
+  }
+}
 var values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 var maxColumns = 8;
 var columnSpace = 20;
@@ -69,6 +77,13 @@ var Game = function(){
   var currentColumn = 0;
   var currentRow = 0;
   var cardColumns = {};
+  instance.cards = ko.observableArray();
+  for(var i = 0; i < maxColumns; i++) {
+    var blankCard = new Card();
+    blankCard.column( i );
+    blankCard.row( 0 );
+    instance.cards.push(blankCard);
+  }
   $.each(tempCards, function(cardIndex, card) {
     var column = cardColumns[currentColumn];
     if(column === undefined) {
@@ -79,12 +94,12 @@ var Game = function(){
     card.column(currentColumn);
     currentColumn++;
     column.push(card);
+    instance.cards.push(card);
     if(currentColumn === maxColumns) {
        currentColumn = 0;
        currentRow++;
      }
   });
-  instance.cards = ko.observableArray(tempCards);
   instance.freeCells = ko.observableArray([new Card(), new Card(), new Card(), new Card()]);
   instance.endCells = ko.observableArray([new Card(), new Card(), new Card(), new Card()]);
   $.each(instance.freeCells(), function(i, freeCell){
@@ -102,6 +117,18 @@ var Game = function(){
     $.each(instance.freeCells(), function(i, card) {
       card.clicked(false);
     });
+  }
+  getLastCardInCol = function( colNum ){
+    var col = cardColumns[colNum];
+    return col[col.length - 1];
+  }
+  addCardToCol = function( card, colNum ) {
+    var lastCard = getLastCardInCol( colNum);
+    card.row( lastCard ? lastCard.row() + 1 : 0 );
+    card.column( colNum );
+    instance.cards.push( card );
+    cardColumns[colNum].push(card);
+    clickedCard = null;
   }
   removeFromFreeCell = function( card, col ) {
     instance.freeCells.replace(card, hiddenFreeCells[col]);
@@ -149,11 +176,24 @@ var Game = function(){
       }
     }
   }
+  isMovingCardNextHigherVal = function( movingCard, stationaryCard ) {
+    if( !stationaryCard ) {
+      return true;
+    }
+    var newVal = values.indexOf(movingCard.value());
+    return newVal === 0 || newVal < values.length && newVal === values.indexOf(stationaryCard.value()) + 1;
+  }
+  isMovingCardNextLowerVal = function( movingCard, stationaryCard ) {
+    if( !stationaryCard ) {
+      return true;
+    }
+    var newVal = values.indexOf(movingCard.value());
+    return newVal === values.length - 1 || newVal === values.indexOf(stationaryCard.value()) - 1;
+  }
   canPutInEnd = function( clickedCard, existingEndCell ) {
     if(clickedCard) {
       if( existingEndCell.blankCard() || clickedCard.suit() === existingEndCell.suit()) {
-        var newVal = values.indexOf(clickedCard.value());
-        return newVal === 0 || newVal < values.length && newVal === values.indexOf(existingEndCell.value()) + 1;
+        return isMovingCardNextHigherVal( clickedCard, existingEndCell );
       }
     }
     return false;
@@ -172,12 +212,32 @@ var Game = function(){
       } else {
         clearClicked();
       }
+      clickedCard = null;
     }
+  }
+  canMoveTo = function( card, toCol ) {
+    var topCardNewCol = getLastCardInCol( toCol );
+    if(isOppositeColor( card, topCardNewCol )) {
+      if( isMovingCardNextLowerVal( clickedCard, topCardNewCol ) ){
+        return true;
+      }
+    }
+    return false;
   }
   instance.setClicked = function(data){
     if(initialized) {
-      var col = cardColumns[data.column()];
-      clickCard( col[col.length - 1] );
+      if( clickedCard && moveComplete ) {
+        moveComplete = false;
+        if( canMoveTo( clickedCard, data.column() )) {
+          removeCard( clickedCard );
+          addCardToCol( clickedCard, data.column());
+        }
+        clickedCard = null;
+        clearClicked();
+      } else {
+        clickCard( getLastCardInCol(data.column()) );
+      }
+      moveComplete = true;
     }
   }
 }
