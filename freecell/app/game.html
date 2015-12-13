@@ -11,7 +11,7 @@
     </div>
   </div>
   <div data-bind="foreach: endCells">
-    <div class="card end-cell" data-bind="style: {left : leftValue()}, css: {suit: suit, 'empty-card' : blankCard }">
+    <div class="card end-cell" data-bind="style: {left : leftValue()}, css: {suit: suit, 'empty-card' : blankCard }, click: $root.clickEndCell($data)">
       <span data-bind="css: suit, html: code"></span>
       <span data-bind="text: value"></span>
     </div>

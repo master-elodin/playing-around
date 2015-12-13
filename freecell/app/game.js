@@ -1,5 +1,5 @@
 var suits = ['clubs', 'diamonds', 'hearts', 'spades'];
-var values = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
+var values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 var maxColumns = 8;
 var columnSpace = 20;
 var rowSpace = 30;
@@ -111,12 +111,14 @@ var Game = function(){
     var cardCol = cardColumns[clickedCard.column()];
     cardColumns[clickedCard.column()] = cardCol.slice(0, cardCol.length - 1);
   }
+  removeCard = function( card ) {
+    card.inFreeCell() ? removeFromFreeCell(card, card.column()) : removeFromCol( card );
+  }
   moveCardToFreeCell = function( card, freeCellCol ) {
     if(instance.freeCells()[freeCellCol].blankCard()) {
       if(moveComplete) {
         moveComplete = false;
-        // Remove from current location
-        card.inFreeCell() ? removeFromFreeCell(card, card.column()) : removeFromCol( card );
+        removeCard( card );
         // Add to free cell
         if(clickedCard) {
           clickedCard.column(freeCellCol);
@@ -144,6 +146,31 @@ var Game = function(){
         clickCard( data );
       }else {
         moveCardToFreeCell( clickedCard, data.column() );
+      }
+    }
+  }
+  canPutInEnd = function( clickedCard, existingEndCell ) {
+    if(clickedCard) {
+      if( existingEndCell.blankCard() || clickedCard.suit() === existingEndCell.suit()) {
+        var newVal = values.indexOf(clickedCard.value());
+        return newVal === 0 || newVal < values.length && newVal === values.indexOf(existingEndCell.value()) + 1;
+      }
+    }
+    return false;
+  }
+  instance.clickEndCell = function( data ) {
+    if(initialized) {
+      if(canPutInEnd( clickedCard, data )){
+        if(moveComplete){
+          moveComplete = false;
+          removeCard( clickedCard );
+          clickedCard.column( data.column() );
+          clickedCard.row(0);
+          instance.endCells.replace(data, clickedCard);
+          moveComplete = true;
+        }
+      } else {
+        clearClicked();
       }
     }
   }

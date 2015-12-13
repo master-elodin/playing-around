@@ -20,6 +20,6 @@
 .empty-card {
   border: 1px dotted black;
 }
-.end-cell {
+.end-cell.empty-card{
   background: rgba(0, 0, 200, .1);
 }
